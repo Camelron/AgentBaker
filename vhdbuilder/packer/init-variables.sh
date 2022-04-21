@@ -69,7 +69,7 @@ if [[ "$MODE" == "gen2Mode" ]]; then
 		if [[ "$OS_SKU" == "CBLMariner" ]]; then
 			SIG_IMAGE_NAME=${OS_SKU}${OS_VERSION//./}Gen2
 		fi
-		echo "No input SIG_IMAGE_NAME for Packer build output. Setting to `${SIG_IMAGE_NAME}`"
+		echo "No input SIG_IMAGE_NAME for Packer build output. Setting to ${SIG_IMAGE_NAME}"
 	fi
 fi
 
@@ -213,6 +213,7 @@ cat <<EOF > vhdbuilder/packer/settings.json
   "windows_image_sku": "${WINDOWS_IMAGE_SKU}",
   "windows_image_version": "${WINDOWS_IMAGE_VERSION}",
   "imported_image_name": "${IMPORTED_IMAGE_NAME}",
+  "sig_gallery_name": "${SIG_GALLERY_NAME}",
   "sig_image_name":  "${SIG_IMAGE_NAME}",
   "arm64_sig_subscription_id": "${ARM64_SIG_SUBSCRIPTION_ID}",
   "arm64_sig_resource_group_name": "${ARM64_SIG_RESOURCE_GROUP_NAME}",
