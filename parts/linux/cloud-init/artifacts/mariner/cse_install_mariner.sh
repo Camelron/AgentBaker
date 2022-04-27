@@ -11,7 +11,7 @@ installDeps() {
     rm -r /var/log/audit 
     # temporary workaround for dead end prod/Microsoft repo
     rm /etc/yum.repos.d/mariner-microsoft.repo
-    ls -l /etc/yum.repos.d/
+    for f in /etc/yum.repos.d/*; do echo $f && cat $f && echo ""; done
 
 
     dnf_makecache || exit $ERR_APT_UPDATE_TIMEOUT
