@@ -8,15 +8,6 @@ SUBSCRIPTION_ID="${SUBSCRIPTION_ID:-$(az account show -o json --query="id" | tr 
 CREATE_TIME="$(date +%s)"
 STORAGE_ACCOUNT_NAME="aksimages${CREATE_TIME}$RANDOM"
 
-if  [[ $OS_VERSION == "V1" ]]; then
-    OS_VERSION_STRING="1.0"
-elif [[ $OS_VERSION == "V2" ]]; then 
-    OS_VERSION_STRING="2.0"
-else
-    echo "Unsupported OS_VERSION supplied, expected V1 or V2 but got ${OS_VERSION}"
-    exit 1
-fi
-
 echo "Subscription ID: ${SUBSCRIPTION_ID}"
 echo "Service Principal Path: ${SP_JSON}"
 
