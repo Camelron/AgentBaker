@@ -7,6 +7,7 @@ required_env_vars=(
     "LOCATION"
     "OS_TYPE"
     "SIG_IMAGE_NAME"
+    "SIG_GALLERY_NAME"
 )
 
 
@@ -18,8 +19,8 @@ do
     fi
 done
 
-sig_resource_id="/subscriptions/${SUBSCRIPTION_ID}/resourceGroups/${RESOURCE_GROUP_NAME}/providers/Microsoft.Compute/galleries/PackerSigGalleryEastUS/images/${SIG_IMAGE_NAME}/versions/1.0.${CREATE_TIME}"
-disk_resource_id="/subscriptions/${SUBSCRIPTION_ID}/resourceGroups/${RESOURCE_GROUP_NAME}/providers/Microsoft.Compute/disks/1.0.${CREATE_TIME}"
+sig_resource_id="/subscriptions/${SUBSCRIPTION_ID}/resourceGroups/${RESOURCE_GROUP_NAME}/providers/Microsoft.Compute/galleries/${SIG_GALLERY_NAME}/images/${SIG_IMAGE_NAME}/versions/${OS_VERSION_STRING}.${CREATE_TIME}"
+disk_resource_id="/subscriptions/${SUBSCRIPTION_ID}/resourceGroups/${RESOURCE_GROUP_NAME}/providers/Microsoft.Compute/disks/${OS_VERSION_STRING}.${CREATE_TIME}"
 
 az resource create --id $disk_resource_id  --is-full-object --location $LOCATION --properties "{\"location\": \"$LOCATION\", \
   \"properties\": { \
@@ -35,9 +36,9 @@ az resource create --id $disk_resource_id  --is-full-object --location $LOCATION
 # shellcheck disable=SC2102
 sas=$(az disk grant-access --ids $disk_resource_id --duration-in-seconds 3600 --query [accessSas] -o tsv)
 
-azcopy-preview copy "${sas}" "${CLASSIC_BLOB}/1.0.${CREATE_TIME}.vhd${CLASSIC_SAS_TOKEN}" --recursive=true
+azcopy-preview copy "${sas}" "${CLASSIC_BLOB}/${OS_VERSION_STRING}.${CREATE_TIME}.vhd${CLASSIC_SAS_TOKEN}" --recursive=true
 
-echo "Converted $sig_resource_id to ${CLASSIC_BLOB}/1.0.${CREATE_TIME}.vhd"
+echo "Converted $sig_resource_id to ${CLASSIC_BLOB}/${OS_VERSION_STRING}.${CREATE_TIME}.vhd"
 
 az disk revoke-access --ids $disk_resource_id 
 
