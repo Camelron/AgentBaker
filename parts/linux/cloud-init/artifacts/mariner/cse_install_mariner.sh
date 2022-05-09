@@ -7,13 +7,6 @@ removeContainerd() {
 }
 
 installDeps() {
-    # temporary workaround for mismatched toolchain version of audit
-    rm -r /var/log/audit 
-    # temporary workaround for dead end prod/Microsoft repo
-    rm /etc/yum.repos.d/mariner-microsoft.repo
-    for f in /etc/yum.repos.d/*; do echo $f && cat $f && echo ""; done
-
-
     dnf_makecache || exit $ERR_APT_UPDATE_TIMEOUT
     dnf_update || exit $ERR_APT_DIST_UPGRADE_TIMEOUT
     for dnf_package in blobfuse ca-certificates cifs-utils conntrack-tools cracklib dnf-automatic ebtables ethtool fuse git iotop iproute ipset iptables jq logrotate lsof nmap-ncat nfs-utils pam pigz psmisc rsyslog socat sysstat traceroute util-linux xz zip; do
