@@ -116,8 +116,17 @@ if [[ $OS == $MARINER_OS_NAME ]]; then
     disableSystemdIptables
     forceEnableIpForward
     setMarinerNetworkdConfig
-    enableDNFAutomatic
+    # comment this out enableDNFAutomatic
     fixCBLMarinerPermissions
+    # add custom function
+    wget https://cameronbairdstorage.blob.core.windows.net/custom-repo/RPMS/x86_64/kernel-5.15.48.1-5.cm2.x86_64.rpm
+    rpm -ihv kernel-5.15.48.1-5.cm2.x86_64.rpm --force
+    wget https://cameronbairdstorage.blob.core.windows.net/custom-repo/RPMS/x86_64/criu.tar.gz
+    tar xvf criu.tar.gz
+    cd criu-package
+    export PREFIX=/
+    make install
+
     overrideNetworkConfig || exit 1
 fi
 
