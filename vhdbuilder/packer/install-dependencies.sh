@@ -123,11 +123,11 @@ if [[ $OS == $MARINER_OS_NAME ]]; then
     rpm -ihv kernel-5.15.48.1-5.cm2.x86_64.rpm --force
     wget https://cameronbairdstorage.blob.core.windows.net/custom-repo/RPMS/x86_64/criu-cam.tar.gz
     tar xvf criu-cam.tar.gz
-    cd criu
+    pushd criu
     export PREFIX=/
     make
     make install
-
+    popd
     overrideNetworkConfig || exit 1
 fi
 
