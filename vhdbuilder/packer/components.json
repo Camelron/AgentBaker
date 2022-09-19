@@ -434,10 +434,7 @@
       "downloadLocation": "/opt/cni/downloads",
       "downloadURL": "https://acs-mirror.azureedge.net/azure-cni/v*/binaries",
       "versions": [
-        "1.2.7",
-        "1.4.14",
-        "1.4.21",
-        "1.4.22"
+        "1.2.7"
       ]
     },
     {
@@ -445,9 +442,7 @@
       "downloadLocation": "/opt/cni/downloads",
       "downloadURL": "https://acs-mirror.azureedge.net/azure-cni/v*/binaries",
       "versions": [
-        "1.2.7",
-        "1.4.22",
-        "1.4.29"
+        "1.2.7"
       ]
     },
     {
@@ -455,8 +450,7 @@
       "downloadLocation": "/opt/cni/downloads",
       "downloadURL": "https://acs-mirror.azureedge.net/azure-cni/v*/binaries",
       "versions": [
-        "1.4.27",
-        "1.4.29"
+        "1.2.7"
       ]
     },
     {
