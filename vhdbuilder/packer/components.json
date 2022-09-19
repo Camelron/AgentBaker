@@ -72,16 +72,13 @@
       "amd64OnlyVersions": [],
       "multiArchVersions": [
         "v1.4.22",
-        "v1.4.27",
-        "v1.4.29"
+        "v1.4.27"
       ]
     },
     {
       "downloadURL": "mcr.microsoft.com/containernetworking/azure-npm:*",
       "amd64OnlyVersions": [],
-      "multiArchVersions": [
-        "v1.4.29"
-      ]
+      "multiArchVersions": []
     },
     {
       "downloadURL": "mcr.microsoft.com/aks/hcp/hcp-tunnel-front:*",
@@ -437,8 +434,10 @@
       "downloadLocation": "/opt/cni/downloads",
       "downloadURL": "https://acs-mirror.azureedge.net/azure-cni/v*/binaries",
       "versions": [
-        "1.4.22",
-        "1.4.32"
+        "1.2.7",
+        "1.4.14",
+        "1.4.21",
+        "1.4.22"
       ]
     },
     {
@@ -446,8 +445,9 @@
       "downloadLocation": "/opt/cni/downloads",
       "downloadURL": "https://acs-mirror.azureedge.net/azure-cni/v*/binaries",
       "versions": [
+        "1.2.7",
         "1.4.22",
-        "1.4.32"
+        "1.4.29"
       ]
     },
     {
@@ -456,7 +456,7 @@
       "downloadURL": "https://acs-mirror.azureedge.net/azure-cni/v*/binaries",
       "versions": [
         "1.4.27",
-        "1.4.32"
+        "1.4.29"
       ]
     },
     {
