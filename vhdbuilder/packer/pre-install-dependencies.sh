@@ -104,4 +104,13 @@ if [[ "${UBUNTU_RELEASE}" == "22.04" ]]; then
   update-grub
 fi
 
+echo "ls -la /boot!!!"
+ls -la /boot
+
+echo "cat grub.cfg!!!"
+cat /boot/grub2/grub.cfg
+
+echo "cat /etc/defualt/grub!!!"
+cat /etc/default/grub
+
 echo "pre-install-dependencies step finished successfully"
