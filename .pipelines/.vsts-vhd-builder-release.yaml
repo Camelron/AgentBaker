@@ -264,6 +264,7 @@ stages:
             echo '##vso[task.setvariable variable=ENABLE_TRUSTED_LAUNCH]False'
             echo '##vso[task.setvariable variable=SGX_INSTALL]True'
             echo '##vso[task.setvariable variable=ENABLE_CGROUPV2]False'
+            echo '##vso[task.setvariable variable=UVM_PIPELINE_ID]318279'
           displayName: Setup Build Variables
         - template: ./templates/.builder-release-template.yaml
           parameters:
@@ -318,6 +319,7 @@ stages:
             echo '##vso[task.setvariable variable=ENABLE_TRUSTED_LAUNCH]False'
             echo '##vso[task.setvariable variable=SGX_INSTALL]True'
             echo '##vso[task.setvariable variable=ENABLE_CGROUPV2]False'
+            echo '##vso[task.setvariable variable=UVM_PIPELINE_ID]318279'
           displayName: Setup Build Variables
         - template: ./templates/.builder-release-template.yaml
           parameters:
@@ -372,6 +374,7 @@ stages:
             echo '##vso[task.setvariable variable=ENABLE_TRUSTED_LAUNCH]False'
             echo '##vso[task.setvariable variable=SGX_INSTALL]True'
             echo '##vso[task.setvariable variable=ENABLE_CGROUPV2]False'
+            echo '##vso[task.setvariable variable=UVM_PIPELINE_ID]318279'
           displayName: Setup Build Variables
         - template: ./templates/.builder-release-template.yaml
           parameters:
@@ -426,6 +429,7 @@ stages:
             echo '##vso[task.setvariable variable=ENABLE_TRUSTED_LAUNCH]False'
             echo '##vso[task.setvariable variable=SGX_INSTALL]True'
             echo '##vso[task.setvariable variable=ENABLE_CGROUPV2]False'
+            echo '##vso[task.setvariable variable=UVM_PIPELINE_ID]318279'
           displayName: Setup Build Variables
         - template: ./templates/.builder-release-template.yaml
           parameters:
@@ -480,6 +484,7 @@ stages:
           echo '##vso[task.setvariable variable=ENABLE_TRUSTED_LAUNCH]False'
           echo '##vso[task.setvariable variable=SGX_INSTALL]False'
           echo '##vso[task.setvariable variable=ENABLE_CGROUPV2]False'
+          echo '##vso[task.setvariable variable=UVM_PIPELINE_ID]318279'
         displayName: Setup Build Variables
       - template: ./templates/.builder-release-template.yaml
         parameters:
@@ -524,7 +529,7 @@ stages:
             echo '##vso[task.setvariable variable=OS_VERSION]V2kata'
             echo '##vso[task.setvariable variable=IMG_PUBLISHER]MicrosoftCBLMariner'
             echo '##vso[task.setvariable variable=IMG_OFFER]cbl-mariner'
-            echo '##vso[task.setvariable variable=IMG_SKU]cbl-mariner-2-kata'
+            echo '##vso[task.setvariable variable=IMG_SKU]cbl-mariner-2-gen2'
             echo '##vso[task.setvariable variable=HYPERV_GENERATION]V2'
             echo '##vso[task.setvariable variable=AZURE_VM_SIZE]Standard_D4ads_v5'
             echo '##vso[task.setvariable variable=FEATURE_FLAGS]kata'
@@ -534,6 +539,7 @@ stages:
             echo '##vso[task.setvariable variable=ENABLE_TRUSTED_LAUNCH]False'
             echo '##vso[task.setvariable variable=SGX_INSTALL]True'
             echo '##vso[task.setvariable variable=ENABLE_CGROUPV2]False'
+            echo '##vso[task.setvariable variable=UVM_PIPELINE_ID]318279'
           displayName: Setup Build Variables
         - template: ./templates/.builder-release-template.yaml
           parameters:
@@ -588,6 +594,7 @@ stages:
             echo '##vso[task.setvariable variable=ENABLE_TRUSTED_LAUNCH]True'
             echo '##vso[task.setvariable variable=SGX_INSTALL]True'
             echo '##vso[task.setvariable variable=ENABLE_CGROUPV2]False'
+            echo '##vso[task.setvariable variable=UVM_PIPELINE_ID]318279'
           displayName: Setup Build Variables
         - template: ./templates/.builder-release-template.yaml
           parameters:
@@ -642,6 +649,7 @@ stages:
             echo '##vso[task.setvariable variable=ENABLE_TRUSTED_LAUNCH]True'
             echo '##vso[task.setvariable variable=SGX_INSTALL]True'
             echo '##vso[task.setvariable variable=ENABLE_CGROUPV2]False'
+            echo '##vso[task.setvariable variable=UVM_PIPELINE_ID]318279'
           displayName: Setup Build Variables
         - template: ./templates/.builder-release-template.yaml
           parameters:
