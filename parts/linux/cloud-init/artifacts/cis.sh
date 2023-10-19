@@ -215,8 +215,10 @@ applyCIS() {
     addFailLockDir
 }
 
-rm -rf /root/.cache/trivy
-
 applyCIS
+
+rm -rf /root/.cache/trivy
+du -sh /root/.cache
+df -h
 
 #EOF

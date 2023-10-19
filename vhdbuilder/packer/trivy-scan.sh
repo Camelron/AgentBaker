@@ -37,5 +37,8 @@ done
 
 rm ./trivy 
 
+rm -rf /root/.cache/trivy
+
+
 chmod a+r "${TRIVY_REPORT_JSON_PATH}"
 chmod a+r "${TRIVY_REPORT_TABLE_PATH}"
