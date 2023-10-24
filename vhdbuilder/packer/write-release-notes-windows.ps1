@@ -90,24 +90,45 @@ $wuRegistryNames = @(
     "HnsPolicyUpdateChange",
     "HnsNatAllowRuleUpdateChange",
     "HnsAclUpdateChange",
+    "HNSFixExtensionUponRehydration",
     "HnsNpmRefresh",
+    "HnsNodeToClusterIpv6",
+    "HNSNpmIpsetLimitChange",
+    "HNSLbNatDupRuleChange",
+    "HNSUpdatePolicyForEndpointChange",
     "WcifsSOPCountDisabled",
     "3105872524",
     "2629306509",
     "3508525708",
     "1995963020",
     "189519500",
-    "VfpEvenPodDistributionIsEnabled"
+    "VfpEvenPodDistributionIsEnabled",
+    "VfpIpv6DipsPrintingIsEnabled",
+    "3230913164",
+    "3398685324",
+    "87798413",
+    "4289201804",
+    "1355135117",
+    "RemoveSourcePortPreservationForRest",
+    "2214038156",
+    "VfpNotReuseTcpOneWayFlowIsEnabled",
+    "1673770637",
+    "FwPerfImprovementChange"
 )
 
 foreach ($key in $wuRegistryKeys) {
     Log ("`t{0}" -f $key)
-    Get-Item -Path $key |
-    Select-Object -ExpandProperty property |
-    ForEach-Object {
-        if ($wuRegistryNames -contains $_) {
-            Log ("`t`t{0} : {1}" -f $_, (Get-ItemProperty -Path $key -Name $_).$_)
+    $regPath=(Get-Item -Path $key -ErrorAction Ignore)
+    if ($regPath) {
+        Get-Item -Path $key |
+        Select-Object -ExpandProperty property |
+        ForEach-Object {
+            if ($wuRegistryNames -contains $_) {
+                Log ("`t`t{0} : {1}" -f $_, (Get-ItemProperty -Path $key -Name $_).$_)
+            }
         }
+    } else {
+        Log "$key doesn't exist in current OS."
     }
 }
 Log ""

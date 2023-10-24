@@ -9,6 +9,9 @@ ifeq (${OS_SKU},Ubuntu)
 else ifeq (${OS_SKU},CBLMariner)
 	@echo "Using packer template file vhd-image-builder-mariner-arm64.json"
 	@packer build -var-file=vhdbuilder/packer/settings.json vhdbuilder/packer/vhd-image-builder-mariner-arm64.json
+else ifeq (${OS_SKU},AzureLinux)
+	@echo "Using packer template file vhd-image-builder-mariner-arm64.json"
+	@packer build -var-file=vhdbuilder/packer/settings.json vhdbuilder/packer/vhd-image-builder-mariner-arm64.json
 else
 	$(error OS_SKU was invalid ${OS_SKU})
 endif
@@ -26,6 +29,9 @@ ifeq (${OS_SKU},Ubuntu)
 	@echo "Using packer template file: vhd-image-builder-base.json"
 	@packer build -var-file=vhdbuilder/packer/settings.json vhdbuilder/packer/vhd-image-builder-base.json
 else ifeq (${OS_SKU},CBLMariner)
+	@echo "Using packer template file vhd-image-builder-mariner.json"
+	@packer build -var-file=vhdbuilder/packer/settings.json vhdbuilder/packer/vhd-image-builder-mariner.json
+else ifeq (${OS_SKU},AzureLinux)
 	@echo "Using packer template file vhd-image-builder-mariner.json"
 	@packer build -var-file=vhdbuilder/packer/settings.json vhdbuilder/packer/vhd-image-builder-mariner.json
 else
@@ -52,12 +58,13 @@ endif
 endif
 
 az-login:
-ifeq (${OS_TYPE},Windows)
-	@echo "Logging into Azure with service principal..."
-	@az login --service-principal -u ${CLIENT_ID} -p ${CLIENT_SECRET} --tenant ${TENANT_ID}
-else
 	@echo "Logging into Azure with agent VM MSI..."
+ifeq ($(origin MANAGED_IDENTITY_ID), undefined)
+	@echo "Logging in with Hosted Pool's Default Managed Identity"
 	@az login --identity
+else
+	@echo "Logging in with Hosted Pool's Managed Identity: ${MANAGED_IDENTITY_ID}"
+	@az login --identity --username ${MANAGED_IDENTITY_ID}
 endif
 	@az account set -s ${SUBSCRIPTION_ID}
 
@@ -68,7 +75,7 @@ run-packer: az-login
 	@packer version && ($(MAKE) -f packer.mk init-packer | tee packer-output) && ($(MAKE) -f packer.mk build-packer | tee -a packer-output)
 
 run-packer-windows: az-login
-	@packer version && ($(MAKE) -f packer.mk init-packer | tee packer-output) && ($(MAKE) -f packer.mk build-packer-windows | tee -a packer-output)
+	@packer init ./vhdbuilder/packer/packer-plugin.pkr.hcl && packer version && ($(MAKE) -f packer.mk init-packer | tee packer-output) && ($(MAKE) -f packer.mk build-packer-windows | tee -a packer-output)
 
 cleanup: az-login
 	@./vhdbuilder/packer/cleanup.sh

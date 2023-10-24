@@ -52,7 +52,6 @@ systemctlEnableAndStart sync-container-logs.service || exit 1
 if [[ ${OS} == ${MARINER_OS_NAME} ]]; then
   dnf_makecache || exit $ERR_APT_UPDATE_TIMEOUT
   dnf_update || exit $ERR_APT_DIST_UPGRADE_TIMEOUT
-
   if [[ "${ENABLE_FIPS,,}" == "true" ]]; then
     # This is FIPS install for Mariner and has nothing to do with Ubuntu Advantage
     echo "Install FIPS for Mariner SKU"
@@ -83,13 +82,11 @@ else
     echo "Install FIPS for Ubuntu SKU"
     installFIPS
   fi
+fi
 
-  # Final step, if 1804 or FIPS, log ua status, detach UA and clean up
-  if [[ "${UBUNTU_RELEASE}" == "18.04" ]] || [[ "${ENABLE_FIPS,,}" == "true" ]]; then
-    # 'ua status' for logging
-    ua status
-    detachAndCleanUpUA
-  fi
+# Handle Azure Linux + CgroupV2
+if [[ ${OS} == ${MARINER_OS_NAME} ]] && [[ "${ENABLE_CGROUPV2,,}" == "true" ]]; then
+  enableCgroupV2forAzureLinux
 fi
 
 echo "pre-install-dependencies step finished successfully"

@@ -12,6 +12,59 @@ param (
 # We use parameters for test script so we set environment variables before importing c:\windows-vhd-configuration.ps1 to reuse it
 $env:WindowsSKU=$windowsSKU
 
+# We skip the signature validation of following scripts for known issues
+# Some scripts in aks-windows-cse-scripts-v0.0.31.zip and aks-windows-cse-scripts-v0.0.32.zip are not signed, and this issue is fixed in aks-windows-cse-scripts-v0.0.33.zip
+# win-bridge.exe is not signed in these k8s packages, and it will be removed from k8s package in the future
+$SkipMapForSignature=@{
+    "aks-windows-cse-scripts-v0.0.31.zip"=@();
+    "aks-windows-cse-scripts-v0.0.32.zip"=@();
+    "v1.24.9-hotfix.20230728-1int.zip"=@(
+        "win-bridge.exe"
+    );
+    "v1.24.10-hotfix.20230728-1int.zip"=@(
+        "win-bridge.exe"
+    );
+    "v1.24.15-hotfix.20230728-1int.zip"=@(
+        "win-bridge.exe"
+    );
+    "v1.25.5-hotfix.20230728-1int.zip"=@(
+        "win-bridge.exe"
+    );
+    "v1.25.6-hotfix.20230728-1int.zip"=@(
+        "win-bridge.exe"
+    );
+    "v1.25.11-hotfix.20230728-1int.zip"=@(
+        "win-bridge.exe"
+    );
+    "v1.26.0-hotfix.20230728-1int.zip"=@(
+        "win-bridge.exe"
+    );
+    "v1.26.3-hotfix.20230728-1int.zip"=@(
+        "win-bridge.exe"
+    );
+    "v1.26.6-hotfix.20230728-1int.zip"=@(
+        "win-bridge.exe"
+    );
+    "v1.27.1-hotfix.20230728-1int.zip"=@(
+        "win-bridge.exe"
+    );
+    "v1.27.3-hotfix.20230728-1int.zip"=@(
+        "win-bridge.exe"
+    );
+    "v1.28.0-1int.zip"=@(
+        "win-bridge.exe"
+    );
+    "v1.28.1-1int.zip"=@(
+        "win-bridge.exe"
+    )
+}
+
+# NotSignedResult is used to record unsigned files that we think should be signed
+$NotSignedResult=@{}
+
+# AllNotSignedFiles is used to record all unsigned files in vhd cache and we exclude files in SkipMapForSignature
+$AllNotSignedFiles=@{}
+
 . c:\windows-vhd-configuration.ps1
 
 filter Timestamp { "$(Get-Date -Format o): $_" }
@@ -143,9 +196,7 @@ function Test-FilesToCacheOnVHD
                             "calico-windows",
                             "azure-vnet-cni-singletenancy-windows-amd64",
                             "azure-vnet-cni-singletenancy-swift-windows-amd64",
-                            "azure-vnet-cni-singletenancy-windows-amd64-v1.4.35.zip",
-                            "azure-vnet-cni-singletenancy-overlay-windows-amd64-v1.4.35.zip",
-                            "azure-vnet-cni-singletenancy-overlay-windows-amd64-v1.4.35_Win2019OverlayFix.zip",
+                            "azure-vnet-cni-singletenancy-overlay-windows-amd64",
                             # We need upstream's help to republish this package. Before that, it does not impact functionality and 1.26 is only in public preview
                             # so we can ignore the different hash values.
                             "v1.26.0-1int.zip"
@@ -181,6 +232,73 @@ function Test-FilesToCacheOnVHD
 
 }
 
+function Test-ValidateAllSignature {
+    foreach ($dir in $map.Keys) {
+        Test-ValidateSinglePackageSignature $dir
+    }
+}
+
+function Test-ValidateSinglePackageSignature {
+    param (
+        $dir
+    )
+
+    foreach ($URL in $map[$dir]) {
+        $fileName = [IO.Path]::GetFileName($URL)
+        $dest = [IO.Path]::Combine($dir, $fileName)
+
+        $installDir="c:\SignatureCheck"
+        New-Item -ItemType Directory $installDir -Force | Out-Null
+        if ($fileName.endswith(".zip")) {
+            Expand-Archive -path $dest -DestinationPath $installDir -Force
+        } elseif ($fileName.endswith(".tar.gz")) {
+            tar -xzf $dest -C $installDir
+        } else {
+            Write-ErrorWithTimestamp "Unknown package suffix"
+            exit 1
+        }
+
+        # Check signature for 4 types of files and record unsigned files
+        $NotSignedList = (Get-ChildItem -Path $installDir -Recurse -File -Include "*.exe", "*.ps1", "*.psm1", "*.dll" | ForEach-object {Get-AuthenticodeSignature $_.FullName} | Where-Object {$_.status -ne "Valid"})
+        if ($NotSignedList.Count -ne 0) {
+            foreach ($NotSignedFile in $NotSignedList) {
+                $NotSignedFileName = [IO.Path]::GetFileName($NotSignedFile.Path)
+                if (($SkipMapForSignature.ContainsKey($fileName) -and ($SkipMapForSignature[$fileName].Length -ne 0) -and !$SkipMapForSignature[$fileName].Contains($NotSignedFileName)) -or !$SkipMapForSignature.ContainsKey($fileName)) {
+                    if ($NotSignedResult.ContainsKey($fileName)) {
+                        $NotSignedResult[$fileName]+=@($NotSignedFileName)
+                    } else {
+                        $NotSignedResult[$fileName]=@($NotSignedFileName)
+                    }
+                }
+            }
+        }
+
+        # Check signature for all types of files and record unsigned files
+        $AllNotSignedList = (Get-ChildItem -Path $installDir -Recurse -File | ForEach-object {Get-AuthenticodeSignature $_.FullName} | Where-Object {$_.status -ne "Valid"})
+        foreach ($NotSignedFile in $AllNotSignedList) {
+            $NotSignedFileName = [IO.Path]::GetFileName($NotSignedFile.Path)
+            if (($SkipMapForSignature.ContainsKey($fileName) -and ($SkipMapForSignature[$fileName].Length -ne 0) -and !$SkipMapForSignature[$fileName].Contains($NotSignedFileName)) -or !$SkipMapForSignature.ContainsKey($fileName)) {
+                if ($AllNotSignedFiles.ContainsKey($fileName)) {
+                    $AllNotSignedFiles[$fileName]+=@($NotSignedFileName)
+                } else {
+                    $AllNotSignedFiles[$fileName]=@($NotSignedFileName)
+                }
+            }
+        }
+
+        Remove-Item -Path $installDir -Force -Recurse
+    }
+
+    $AllNotSignedFiles = (echo $AllNotSignedFiles | Format-Table | Out-String)
+    Write-Output "All not signed file in cached packages are: $AllNotSignedFiles"
+
+    if ($NotSignedResult.Count -ne 0) {
+        $NotSignedResult = (echo $NotSignedResult | Format-Table | Out-String)
+        Write-ErrorWithTimestamp "Binaries in $NotSignedResult are not signed"
+        exit 1
+    }
+}
+
 function Test-PatchInstalled {
     $hotfix = Get-HotFix
     $currenHotfixes = @()
@@ -196,19 +314,9 @@ function Test-PatchInstalled {
 }
 
 function Test-ImagesPulled {
-    Param(
-        [Switch]$isAzureChinaCloud = $false
-    )
-    Write-Output "Test-ImagesPulled. IsAzureChinaCloud: $isAzureChinaCloud"
+    Write-Output "Test-ImagesPulled."
     $targetImagesToPull = $imagesToPull
-    $excludeMcrUrl="mcr.azk8s.cn*"
-    if ($isAzureChinaCloud) {
-        $excludeMcrUrl="mcr.microsoft.com*"
-        $targetImagesToPull = @()
-        foreach ($image in $imagesToPull) {
-            $targetImagesToPull += $image.Replace("mcr.microsoft.com", "mcr.azk8s.cn")
-        }
-    }
+
     Start-Job-To-Expected-State -JobName containerd -ScriptBlock { containerd.exe }
     # NOTE:
     # 1. listing images with -q set is expected to return only image names/references, but in practise
@@ -216,10 +324,11 @@ function Test-ImagesPulled {
     #    https://github.com/containerd/containerd/blob/master/cmd/ctr/commands/images/images.go#L89
     # 2. As select-string with nomatch pattern returns additional line breaks, qurying MatchInfo's Line property keeps
     #    only image reference as a workaround
-    $pulledImages = (ctr.exe -n k8s.io image ls -q | Select-String -notmatch "sha256:.*" | Select-String -notmatch $excludeMcrUrl | % { $_.Line } )
+    $pulledImages = (ctr.exe -n k8s.io image ls -q | Select-String -notmatch "sha256:.*" | % { $_.Line } )
 
-    if(Compare-Object $targetImagesToPull $pulledImages) {
-        Write-ErrorWithTimestamp "images to pull do not equal images cached $targetImagesToPull != $pulledImages. For AzureChinaCloud: $isAzureChinaCloud"
+    $result = (Compare-Object $targetImagesToPull $pulledImages)
+    if($result) {
+        Write-ErrorWithTimestamp "images to pull do not equal images cached $(($result).InputObject) ."
         exit 1
     }
 }
@@ -233,7 +342,7 @@ function Test-RegistryAdded {
 
     if ($env:WindowsSKU -Like '2019*') {
         $result=(Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\hns\State" -Name HNSControlFlag)
-        if (($result.HNSControlFlag -band 0x50) -ne 0x50) {
+        if (($result.HNSControlFlag -band 0x10) -ne 0x10) {
             Write-ErrorWithTimestamp "The registry for the two HNS fixes is not added"
             exit 1
         }
@@ -260,6 +369,16 @@ function Test-RegistryAdded {
         $result=(Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\VfpExt\Parameters" -Name VfpEvenPodDistributionIsEnabled)
         if ($result.VfpEvenPodDistributionIsEnabled -ne 1) {
             Write-ErrorWithTimestamp "The registry for VfpEvenPodDistributionIsEnabled is not added"
+            exit 1
+        }
+        $result=(Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Policies\Microsoft\FeatureManagement\Overrides" -Name 3230913164)
+        if ($result.3230913164 -ne 1) {
+            Write-ErrorWithTimestamp "The registry for 3230913164 is not added"
+            exit 1
+        }
+        $result=(Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\VfpExt\Parameters" -Name VfpNotReuseTcpOneWayFlowIsEnabled)
+        if ($result.VfpNotReuseTcpOneWayFlowIsEnabled -ne 1) {
+            Write-ErrorWithTimestamp "The registry for VfpNotReuseTcpOneWayFlowIsEnabled is not added"
             exit 1
         }
     }
@@ -309,6 +428,86 @@ function Test-RegistryAdded {
             Write-ErrorWithTimestamp "The registry for VfpEvenPodDistributionIsEnabled is not added"
             exit 1
         }
+        $result=(Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Policies\Microsoft\FeatureManagement\Overrides" -Name 3398685324)
+        if ($result.3398685324 -ne 1) {
+            Write-ErrorWithTimestamp "The registry for 3398685324 is not added"
+            exit 1
+        }
+        $result=(Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\hns\State" -Name HnsNodeToClusterIpv6)
+        if ($result.HnsNodeToClusterIpv6 -ne 1) {
+            Write-ErrorWithTimestamp "The registry for HnsNodeToClusterIpv6 is not added"
+            exit 1
+        }
+        $result=(Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\hns\State" -Name HNSNpmIpsetLimitChange)
+        if ($result.HNSNpmIpsetLimitChange -ne 1) {
+            Write-ErrorWithTimestamp "The registry for HNSNpmIpsetLimitChange is not added"
+            exit 1
+        }
+        $result=(Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\hns\State" -Name HNSLbNatDupRuleChange)
+        if ($result.HNSLbNatDupRuleChange -ne 1) {
+            Write-ErrorWithTimestamp "The registry for HNSLbNatDupRuleChange is not added"
+            exit 1
+        }
+        $result=(Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\VfpExt\Parameters" -Name VfpIpv6DipsPrintingIsEnabled)
+        if ($result.VfpIpv6DipsPrintingIsEnabled -ne 1) {
+            Write-ErrorWithTimestamp "The registry for VfpIpv6DipsPrintingIsEnabled is not added"
+            exit 1
+        }
+        $result=(Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\hns\State" -Name HNSUpdatePolicyForEndpointChange)
+        if ($result.HNSUpdatePolicyForEndpointChange -ne 1) {
+            Write-ErrorWithTimestamp "The registry for HNSUpdatePolicyForEndpointChange is not added"
+            exit 1
+        }
+        $result=(Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\hns\State" -Name HNSFixExtensionUponRehydration)
+        if ($result.HNSFixExtensionUponRehydration -ne 1) {
+            Write-ErrorWithTimestamp "The registry for HNSFixExtensionUponRehydration is not added"
+            exit 1
+        }
+        $result=(Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Policies\Microsoft\FeatureManagement\Overrides" -Name 87798413)
+        if ($result.87798413 -ne 1) {
+            Write-ErrorWithTimestamp "The registry for 87798413 is not added"
+            exit 1
+        }
+
+        $result=(Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Policies\Microsoft\FeatureManagement\Overrides" -Name 4289201804)
+        if ($result.4289201804 -ne 1) {
+            Write-ErrorWithTimestamp "The registry for 4289201804 is not added"
+            exit 1
+        }
+
+        $result=(Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Policies\Microsoft\FeatureManagement\Overrides" -Name 1355135117)
+        if ($result.1355135117 -ne 1) {
+            Write-ErrorWithTimestamp "The registry for 1355135117 is not added"
+            exit 1
+        }
+
+        $result=(Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\hns\State" -Name RemoveSourcePortPreservationForRest)
+        if ($result.RemoveSourcePortPreservationForRest -ne 1) {
+            Write-ErrorWithTimestamp "The registry for RemoveSourcePortPreservationForRest is not added"
+            exit 1
+        }
+
+        $result=(Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Policies\Microsoft\FeatureManagement\Overrides" -Name 2214038156)
+        if ($result.2214038156 -ne 1) {
+            Write-ErrorWithTimestamp "The registry for 2214038156 is not added"
+            exit 1
+        }
+
+        $result=(Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Policies\Microsoft\FeatureManagement\Overrides" -Name 1673770637)
+        if ($result.1673770637 -ne 1) {
+            Write-ErrorWithTimestamp "The registry for 1673770637 is not added"
+            exit 1
+        }
+        $result=(Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\VfpExt\Parameters" -Name VfpNotReuseTcpOneWayFlowIsEnabled)
+        if ($result.VfpNotReuseTcpOneWayFlowIsEnabled -ne 1) {
+            Write-ErrorWithTimestamp "The registry for VfpNotReuseTcpOneWayFlowIsEnabled is not added"
+            exit 1
+        }
+        $result=(Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\hns\State" -Name FwPerfImprovementChange)
+        if ($result.FwPerfImprovementChange -ne 1) {
+            Write-ErrorWithTimestamp "The registry for FwPerfImprovementChange is not added"
+            exit 1
+        }
     }
 }
 
@@ -344,12 +543,23 @@ function Test-ExcludeUDPSourcePort {
     }
 }
 
+function Test-WindowsDefenderPlatformUpdate {
+    $currentDefenderProductVersion = (Get-MpComputerStatus).AMProductVersion
+    $latestDefenderProductVersion = ([xml]((Invoke-WebRequest -UseBasicParsing -Uri:"$global:defenderUpdateInfoUrl").Content)).versions.platform
+ 
+    if ($latestDefenderProductVersion -gt $currentDefenderProductVersion) {
+        Write-ErrorWithTimestamp "Update failed. Current MPVersion: $currentDefenderProductVersion, Expected Version: $latestDefenderProductVersion"
+        exit 1
+    }
+}
+
 Test-FilesToCacheOnVHD
+Test-ValidateAllSignature
 Test-PatchInstalled
 Test-ImagesPulled
-Test-ImagesPulled -isAzureChinaCloud
 Test-RegistryAdded
 Test-DefenderSignature
 Test-AzureExtensions
 Test-ExcludeUDPSourcePort
+Test-WindowsDefenderPlatformUpdate
 Remove-Item -Path c:\windows-vhd-configuration.ps1

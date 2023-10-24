@@ -3,20 +3,40 @@ package e2e_test
 import (
 	"fmt"
 	"os"
+	"strings"
+)
+
+const (
+	subscriptionIdEnvironmentVarName     = "SUBSCRIPTION_ID"
+	locationEnvironmentVarName           = "LOCATION"
+	keepVMSSEnvironmentVarName           = "KEEP_VMSS"
+	scenariosToRunEnvironmentVarName     = "SCENARIOS_TO_RUN"
+	scenariosToExcludeEnvironmentVarName = "SCENARIOS_TO_EXCLUDE"
+
+	suiteConfigStringTemplate = `subscription: %[1]s,
+location: %[2]s,
+resource group: %[3]s,
+keep vmss: %[4]t`
 )
 
 type suiteConfig struct {
-	subscription      string
-	location          string
-	resourceGroupName string
-	scenariosToRun    map[string]bool
+	subscription       string
+	location           string
+	resourceGroupName  string
+	scenariosToRun     map[string]bool
+	scenariosToExclude map[string]bool
+	keepVMSS           bool
+}
+
+func (c *suiteConfig) String() string {
+	return fmt.Sprintf(suiteConfigStringTemplate, c.subscription, c.location, c.resourceGroupName, c.keepVMSS)
 }
 
 func newSuiteConfig() (*suiteConfig, error) {
+	// required environment variables
 	var environment = map[string]string{
-		"SUBSCRIPTION_ID":     "",
-		"LOCATION":            "",
-		"RESOURCE_GROUP_NAME": "",
+		subscriptionIdEnvironmentVarName: "",
+		locationEnvironmentVarName:       "",
 	}
 
 	for k := range environment {
@@ -27,10 +47,22 @@ func newSuiteConfig() (*suiteConfig, error) {
 		environment[k] = value
 	}
 
-	return &suiteConfig{
-		subscription:      environment["SUBSCRIPTION_ID"],
-		location:          environment["LOCATION"],
-		resourceGroupName: environment["RESOURCE_GROUP_NAME"],
-		scenariosToRun:    strToBoolMap(os.Getenv("SCENARIOS_TO_RUN")),
-	}, nil
+	config := &suiteConfig{
+		subscription:      environment[subscriptionIdEnvironmentVarName],
+		location:          environment[locationEnvironmentVarName],
+		resourceGroupName: fmt.Sprintf(abe2eResourceGroupNameTemplate, environment[locationEnvironmentVarName]),
+		keepVMSS:          strings.EqualFold(os.Getenv(keepVMSSEnvironmentVarName), "true"),
+	}
+
+	include := os.Getenv(scenariosToRunEnvironmentVarName)
+	exclude := os.Getenv(scenariosToExcludeEnvironmentVarName)
+
+	// enforce SCENARIOS_TO_RUN over SCENARIOS_TO_EXCLUDE
+	if include != "" {
+		config.scenariosToRun = strToBoolMap(include)
+	} else if exclude != "" {
+		config.scenariosToExclude = strToBoolMap(exclude)
+	}
+
+	return config, nil
 }

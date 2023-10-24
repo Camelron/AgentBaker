@@ -19,14 +19,17 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-func bootstrapVMSS(ctx context.Context, t *testing.T, r *mrand.Rand, opts *scenarioRunOpts, publicKeyBytes []byte) (string, *armcompute.VirtualMachineScaleSet, func(), error) {
+const (
+	vmssNameTemplate                         = "abtest%s"
+	listVMSSNetworkInterfaceURLTemplate      = "https://management.azure.com/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Compute/virtualMachineScaleSets/%s/virtualMachines/%d/networkInterfaces?api-version=2018-10-01"
+	loadBalancerBackendAddressPoolIDTemplate = "/subscriptions/%s/resourceGroups/%s/providers/Microsoft.Network/loadBalancers/kubernetes/backendAddressPools/aksOutboundBackendPool"
+)
+
+func bootstrapVMSS(ctx context.Context, t *testing.T, r *mrand.Rand, vmssName string, opts *scenarioRunOpts, publicKeyBytes []byte) (*armcompute.VirtualMachineScaleSet, func(), error) {
 	nodeBootstrapping, err := getNodeBootstrapping(ctx, opts.nbc)
 	if err != nil {
-		return "", nil, nil, fmt.Errorf("unable to get node bootstrapping: %w", err)
+		return nil, nil, fmt.Errorf("unable to get node bootstrapping: %w", err)
 	}
-
-	vmssName := fmt.Sprintf("abtest%s", randomLowercaseString(r, 4))
-	log.Printf("vmss name: %q", vmssName)
 
 	cleanupVMSS := func() {
 		log.Printf("deleting vmss %q", vmssName)
@@ -44,14 +47,14 @@ func bootstrapVMSS(ctx context.Context, t *testing.T, r *mrand.Rand, opts *scena
 
 	vmssModel, err := createVMSSWithPayload(ctx, nodeBootstrapping.CustomData, nodeBootstrapping.CSE, vmssName, publicKeyBytes, opts)
 	if err != nil {
-		return "", nil, nil, fmt.Errorf("unable to create VMSS with payload: %w", err)
+		return nil, nil, fmt.Errorf("unable to create VMSS with payload: %w", err)
 	}
 
-	return vmssName, vmssModel, cleanupVMSS, nil
+	return vmssModel, cleanupVMSS, nil
 }
 
 func createVMSSWithPayload(ctx context.Context, customData, cseCmd, vmssName string, publicKeyBytes []byte, opts *scenarioRunOpts) (*armcompute.VirtualMachineScaleSet, error) {
-	model := getBaseVMSSModel(vmssName, opts.suiteConfig.location, *opts.clusterConfig.cluster.Properties.NodeResourceGroup, opts.clusterConfig.subnetId, string(publicKeyBytes), customData, cseCmd)
+	model := getBaseVMSSModel(vmssName, opts.suiteConfig.location, opts.suiteConfig.subscription, *opts.clusterConfig.cluster.Properties.NodeResourceGroup, opts.clusterConfig.subnetId, string(publicKeyBytes), customData, cseCmd)
 
 	isAzureCNI, err := opts.clusterConfig.isAzureCNI()
 	if err != nil {
@@ -191,7 +194,11 @@ func getNewRSAKeyPair(r *mrand.Rand) (privatePEMBytes []byte, publicKeyBytes []b
 	return
 }
 
-func getBaseVMSSModel(name, location, mcResourceGroupName, subnetID, sshPublicKey, customData, cseCmd string) armcompute.VirtualMachineScaleSet {
+func getVmssName(r *mrand.Rand) string {
+	return fmt.Sprintf(vmssNameTemplate, randomLowercaseString(r, 4))
+}
+
+func getBaseVMSSModel(name, location, subscription, mcResourceGroupName, subnetID, sshPublicKey, customData, cseCmd string) armcompute.VirtualMachineScaleSet {
 	return armcompute.VirtualMachineScaleSet{
 		Location: to.Ptr(location),
 		SKU: &armcompute.SKU{
@@ -262,7 +269,8 @@ func getBaseVMSSModel(name, location, mcResourceGroupName, subnetID, sshPublicKe
 												{
 													ID: to.Ptr(
 														fmt.Sprintf(
-															"/subscriptions/8ecadfc9-d1a3-4ea4-b844-0d9f87e4d7c8/resourceGroups/%s/providers/Microsoft.Network/loadBalancers/kubernetes/backendAddressPools/aksOutboundBackendPool",
+															loadBalancerBackendAddressPoolIDTemplate,
+															subscription,
 															mcResourceGroupName,
 														),
 													),
