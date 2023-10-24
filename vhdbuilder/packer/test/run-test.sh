@@ -14,7 +14,6 @@ if [ "$OS_TYPE" == "Linux" ]; then
   #if [ "$IMG_SKU" == "20_04-lts-cvm" ] || [ "$OS_VERSION" == "V1" ] && [ "$OS_SKU" == "CBLMariner" ]; then
   echo "Skipping tests for custom base image"
   #  exit 0
-  fi
 fi
 
 RESOURCE_GROUP_NAME="$TEST_RESOURCE_PREFIX-$(date +%s)-$RANDOM"
