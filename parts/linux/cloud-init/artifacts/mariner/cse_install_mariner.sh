@@ -45,6 +45,19 @@ installKataDeps() {
       rm mshv-bootloader-25357.1.230428-1528.1.cm2.x86_64.rpm
       rm mshv-linuxloader-0.5.0-2.2.cm2.x86_64.rpm
       rm mshv-25357.1.230428-1528.1.cm2.x86_64.rpm
+
+      echo "wget test grub & kexec packages"
+      wget "https://cameronbairdeastus.blob.core.windows.net/test-rpms/grub2-efi-binary-2.06-12.cm2.x86_64.rpm" -O grub2-efi-binary-2.06-12.cm2.x86_64.rpm
+      wget "https://cameronbairdeastus.blob.core.windows.net/test-rpms/kexec-tools-2.0.23-4.cm2.x86_64.rpm" -O kexec-tools-2.0.23-4.cm2.x86_64.rpm
+      wget "https://cameronbairdeastus.blob.core.windows.net/test-rpms/crash-8.0.1-3.cm2.x86_64.rpm" -O crash-8.0.1-3.cm2.x86_64.rpm
+
+      rpm -Uhv grub2-efi-binary-2.06-12.cm2.x86_64.rpm
+      rpm -Uhv kexec-tools-2.0.23-4.cm2.x86_64.rpm
+      rpm -Uhv crash-8.0.1-3.cm2.x86_64.rpm
+
+      rm grub2-efi-binary-2.06-12.cm2.x86_64.rpm
+      rm kexec-tools-2.0.23-4.cm2.x86_64.rpm
+      rm crash-8.0.1-3.cm2.x86_64.rpm
     fi
 }
 
