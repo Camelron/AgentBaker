@@ -36,7 +36,7 @@ installKataDeps() {
 
 
     # debug to avoid the rpm build pipelines
-    sed -i 's/crashkernel=[^ ]*/crashkernel=256M/g' /boot/mariner-mshv.cfg
+    sed -i 's/crashkernel=[^ ]*/crashkernel=512M-32G:256M,32G-:512M/g' /boot/mariner-mshv.cfg
 }
 
 downloadGPUDrivers() {
